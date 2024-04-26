@@ -1,7 +1,9 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
+from django.http import HttpResponse
 from adminapp.models import Student, Course
-from facultyapp.models import CourseContent, UploadWork
+from facultyapp.models import CourseContent, UploadWork, CourseQuiz
+from .models import QuizResult
 from django.conf import settings
 from django.core.mail import send_mail
 
@@ -52,17 +54,23 @@ def studentupdatepwd(request):
         print("Old Pwd is Invalid")
         msg = "Old Password is Incorrect"
 
-    return render(request, "studentchangepwd.html", {"sid":sid,"message":msg})
+    return render(request, "studentchangepwd.html", {"sid": sid, "message": msg})
 
 def studentcourses(request):
     sid = request.session["sid"]
-    return render(request,"studentcourses.html",{"sid":sid})
+    return render(request,"studentcourses.html", {"sid": sid})
 
 def studentcoursecontent(request,ccode):
     sid = request.session["sid"]
     print(sid)
     content = CourseContent.objects.filter(Q(course_code=ccode))
-    return render(request,"studentcoursecontent.html",{"sid":sid,"coursecontent":content})
+    return render(request,"studentcoursecontent.html", {"sid": sid, "coursecontent": content})
+
+def studentquiz(request,ccode):
+    sid = request.session["sid"]
+    print(sid)
+    content = CourseQuiz.objects.filter(Q(course_code=ccode)).distinct('quiz_title')
+    return render(request,"studentquiz.html", {"sid": sid, "CourseQuiz": content})
 
 def displaystudentcourses(request):
     sid = request.session["sid"]
@@ -88,6 +96,7 @@ def displaycourselist(request):
 
 
 def uploadwork(request):
+    sid = request.session["sid"]
     if request.method == 'POST':
         sid = request.POST.get('sid')
         topic = request.POST.get('topic')
@@ -97,17 +106,63 @@ def uploadwork(request):
             upload = UploadWork.objects.create(student_id=sid, topic_name=topic, uploded_file=uploaded_file.name)
             message = "Work uploaded successfully..!"
 
-            subject = 'Work Uploaded Successfully'
-            message = ('Dear Student, your Work has been Uploaded Successfully.'
-                       )
-            from_email = 'annepuuday111@gmail.com'
-            recipient_list = [Student.email]
-            send_mail(subject, message, from_email, recipient_list)
+            # subject = 'Work Uploaded Successfully'
+            # message = ('Dear Student, your Work has been Uploaded Successfully.'
+            #            )
+            # from_email = 'annepuuday111@gmail.com'
+            # recipient_list = [Student.email]
+            # send_mail(subject, message, from_email, recipient_list)
 
         else:
             message = "Please fill in all the fields."
 
-        return render(request, 'uploadwork.html', {"sid": sid, "message": message, "upload":upload})
+        return render(request, 'uploadwork.html', {"sid": sid, "message": message, "upload": upload})
     else:
         sid = request.session.get("sid")
         return render(request, 'uploadwork.html', {"sid": sid})
+
+def attemptquiz(request, quiz_title):
+    sid = request.session["sid"]
+    quiz = CourseQuiz.objects.filter(quiz_title=quiz_title)
+    questions = CourseQuiz.objects.filter(quiz_title=quiz_title)
+    return render(request, 'attemptquiz.html', {'questions': questions, 'sid': sid, 'quiz': quiz})
+
+def submitquiz(request):
+    sid = request.session["sid"]
+
+    if QuizResult.objects.filter(sid=sid).exists():
+        return HttpResponse("Quiz is already taken.")
+
+    if request.method == "POST":
+        score = 0
+        total_questions = 0
+
+        for key, value in request.POST.items():
+            if key.startswith('answer') and value:
+                total_questions += 1
+                question_number = int(key.replace('answer', ''))
+                question = CourseQuiz.objects.get(pk=request.POST[f'question{question_number}'])
+                if value == question.answer:
+                    score += 1
+
+        percentage = (score / total_questions) * 100 if total_questions != 0 else 0
+
+        if percentage >= 70:
+            grade = 'A'
+        elif percentage >= 60:
+            grade = 'B'
+        elif percentage >= 50:
+            grade = 'C'
+        elif percentage >= 40:
+            grade = 'D'
+        else:
+            grade = 'F',
+
+        print(grade,sid,percentage)
+        quizresult = QuizResult(sid=sid, quiz_title=question.quiz_title, quiz_score=score)
+        QuizResult.save(quizresult)
+        return render(request, 'quizresult.html', {'percentage': percentage, 'grade': grade, "sid": sid,"quiz_title":question.quiz_title})
+
+    else:
+        error_message = "Failed to Save The Quiz"
+        return render(request, 'error.html', {'error_message': error_message, "sid": sid})

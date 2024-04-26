@@ -55,6 +55,15 @@
   border-radius: 4px;
   transition: background-color 0.3s;
 }
+    .viewquiz-button {
+  display: inline-block;
+  padding: 8px 12px;
+  background-color: orange;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
   </style>
 <h3 align="center"><u>View Courses</u></h3>
 <br>
@@ -66,6 +75,7 @@
         <th>Course code</th>
         <th>Course title</th>
         <th>Content</th>
+        <th>Quiz</th>
       </tr>
     </thead>
     <tbody id="myTable">
@@ -75,6 +85,9 @@
           <td>{{course.coursetitle}}</td>
           <td>
             <a href="studentcoursecontent/{{course.coursecode}}" class="viewbutton">View</a>
+          </td>
+          <td>
+            <a href="studentquiz/{{course.coursecode}}" class="viewquiz-button">View Quiz's</a>
           </td>
         </tr>
       {% endfor %}

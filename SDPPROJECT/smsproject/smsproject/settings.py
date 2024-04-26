@@ -77,7 +77,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'SMSProject',
         'USER':'postgres',
-        'PASSWORD':'Deepthi@09',
+        'PASSWORD':'uday@2215302',
         'HOST':'localhost',
         'PORT':'5432'
     }

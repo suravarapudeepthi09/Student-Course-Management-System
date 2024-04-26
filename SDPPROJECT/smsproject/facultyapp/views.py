@@ -1,9 +1,11 @@
 from django.db.models import Q
 from adminapp.models import Faculty, FacultyCourseMapping,Course
-from .forms import AddCourseContentForm
+from .forms import AddCourseContentForm, AddQuizForm
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import CourseContent, UploadWork
+from .models import CourseContent, UploadWork, CourseQuiz
 from django.http import HttpResponse
+from studentapp.models import QuizResult
+
 
 def checkfacultylogin(request):
     fid = request.POST["fid"]
@@ -83,11 +85,30 @@ def facultyaddcontent(request):
         msg = "Content Added Failed"
     return render(request, 'facultyaddcontent.html', {"fid": fid,"form":form,"msg":msg})
 
+def facultyaddquiz(request):
+    fid = request.session.get("fid")
+    if request.method == 'POST':
+        form = AddQuizForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('facultyaddquiz')
+        # msg = "Quiz Added Successfully"
+    else:
+        form = AddQuizForm()
+        # msg = "Quiz Added Failed"
+    return render(request, 'facultyaddquiz.html', {'form': form,"fid": fid})
+
 def facultyviewcontent(request):
     fid = request.session["fid"]
     print(fid)
     content = CourseContent.objects.filter(Q(faculty__facultyid=fid))
     return render(request, 'facultyviewcontent.html',{"fid": fid, "coursecontent": content})
+
+def facultyviewquiz(request):
+    fid = request.session["fid"]
+    print(fid)
+    content = CourseQuiz.objects.all()
+    return render(request, 'facultyviewquiz.html',{"fid": fid, "CourseQuiz": content})
 
 def contentupdation(request, id):
     fid= request.session["fid"]
@@ -103,10 +124,30 @@ def contentupdation(request, id):
         form = AddCourseContentForm(instance=content)
     return render(request, "contentupdation.html", {"form": form, "fid":fid,"content":content})
 
+def quizupdation(request, id):
+    fid= request.session["fid"]
+    content = get_object_or_404(CourseQuiz, pk=id)
+    if request.method == "POST":
+        form = AddQuizForm(request.POST, instance=content)
+        if form.is_valid():
+            form.save()
+            return HttpResponse("Content Updated Successfully")
+        else:
+            return HttpResponse("Updation Failed")
+    else:
+        form = AddQuizForm(instance=content)
+    return render(request, "quizupdation.html", {"form": form, "fid":fid,"content":content})
+
 
 def updatecontent(request):
     fid = request.session.get("fid")
     content = CourseContent.objects.all()
+    count = Faculty.objects.count()
+    return render(request, "updatecontent.html", {"content": content, "count": count, "fid": fid})
+
+def updatequiz(request):
+    fid = request.session.get("fid")
+    content = CourseQuiz.objects.all()
     count = Faculty.objects.count()
     return render(request, "updatecontent.html", {"content": content, "count": count, "fid": fid})
 
@@ -116,4 +157,9 @@ def viewwork(request):
     context = {'course_contents': course_contents, 'fid': fid}
     return render(request, 'viewwork.html', context)
 
+def facultyviewresult(request):
+    fid = request.session.get("fid")
+    quiz_results = QuizResult.objects.all()
+    context = {'quiz_results': quiz_results, 'fid': fid}
+    return render(request, 'facultyviewresult.html', context)
 

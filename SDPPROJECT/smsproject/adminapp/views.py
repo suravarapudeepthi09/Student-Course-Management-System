@@ -134,7 +134,7 @@ def addfaculty(request):
            # return HttpResponse("Faculty Added Successfully")
         else:
             message = "Failed to Add Faculty"
-            return render(request, "addstudent.html", {"msg": message, "form": form, "adminuname": auname})
+            return render(request, "addfaculty.html", {"msg": message, "form": form, "adminuname": auname})
 
     return render(request,"addfaculty.html",{"form":form, "adminuname": auname})
 
@@ -192,20 +192,16 @@ def studentupdation(request,sid):
         form = StudentForm(instance=student)
     return render(request,"studentupdated.html",{"form":form,"adminuname":auname})
 
-
-
 def deletestudent(request):
     auname = request.session["auname"]
     student=Student.objects.all()
     count = Student.objects.count()
     return render(request,"deletestudent.html",{"studentdata":student,"count":count,"adminuname":auname})
 
-
 def studentdeletion(request,sid):
     Student.objects.filter(id=sid).delete()
     #return HttpResponse("Student deleted Successfully")
     return redirect("deletestudent")
-
 
 def addstudent(request):
     auname = request.session["auname"]
